@@ -21,7 +21,7 @@ all: lint release test
 .PHONY: dependencies
 dependencies:
 	@echo "Installing db2 lib..."
-	git clone -b v0.4.1 --depth=1 https://github.com/ibmdb/go_ibm_db ${GOPATH}/src/github.com/ibmdb/go_ibm_db
+	git clone -b v0.4.1 --depth=1 https://github.moeyy.xyz/https://github.com/ibmdb/go_ibm_db.git ${GOPATH}/src/github.com/ibmdb/go_ibm_db
 	cd ${GOPATH}/src/github.com/ibmdb/go_ibm_db/installer && go run setup.go
 ifdef SHOULD_LINT
 	@echo "Installing golint..."

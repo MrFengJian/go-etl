@@ -1,0 +1,13 @@
+{
+  "name": "qizhiblock",
+  "parameter": {
+    "restApiEndpoint": "",
+    "username": "",
+    "password": "",
+    "channel": "",
+    "chainCode": "map",
+    "chainCodeFunction": "put",
+    "keyColumn": 0,
+    "batchSize": 1
+  }
+}
