@@ -81,11 +81,16 @@ func (c *apiClient) writeRecord(keyColumnIndex int, record element.Record) error
 		if err != nil {
 			return err
 		}
-		v, err := col.AsString()
-		if err != nil {
-			return err
+		if !col.IsNil() {
+			v, err := col.AsString()
+			if err != nil {
+				return err
+			}
+			value[col.Name()] = v
+		} else {
+			value[col.Name()] = ""
 		}
-		value[col.Name()] = v
+
 	}
 	bs, err := json.Marshal(value)
 	if err != nil {
@@ -102,6 +107,7 @@ func (c *apiClient) writeRecord(keyColumnIndex int, record element.Record) error
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+c.token)
 	response, err := c.client.Do(req)
 	if err != nil {
 		return err
@@ -113,5 +119,6 @@ func (c *apiClient) writeRecord(keyColumnIndex int, record element.Record) error
 	if response.StatusCode > 300 {
 		return errors.New(string(responseBytes))
 	}
+	fmt.Println(string(responseBytes))
 	return nil
 }

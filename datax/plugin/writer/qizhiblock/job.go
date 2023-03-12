@@ -33,5 +33,5 @@ func (j *Job) Destroy(ctx context.Context) (err error) {
 
 // Split 切分job
 func (j *Job) Split(ctx context.Context, number int) ([]*config.JSON, error) {
-	return []*config.JSON{j.PluginConf()}, nil
+	return []*config.JSON{j.PluginJobConf()}, nil
 }

@@ -2,7 +2,6 @@ package qizhiblock
 
 import (
 	"context"
-	"github.com/Breeze0806/go-etl/config"
 	"github.com/Breeze0806/go-etl/datax/common/plugin"
 	"github.com/Breeze0806/go-etl/datax/common/spi/writer"
 	"github.com/Breeze0806/go-etl/datax/core/transport/exchange"
@@ -15,17 +14,12 @@ import (
 type Task struct {
 	*writer.BaseTask
 	conf         *Config
-	content      *config.JSON
 	restApiToken string
 	client       *apiClient
 }
 
-func (t Task) Init(ctx context.Context) (err error) {
-	if t.content, err = t.PluginJobConf().GetConfig("content"); err != nil {
-		return t.Wrapf(err, "GetString fail")
-	}
-
-	if t.conf, err = NewConfig(t.content); err != nil {
+func (t *Task) Init(ctx context.Context) (err error) {
+	if t.conf, err = NewConfig(t.PluginJobConf()); err != nil {
 		return t.Wrapf(err, "newConfig fail")
 	}
 
@@ -42,17 +36,17 @@ func (t Task) Init(ctx context.Context) (err error) {
 		log.Errorf("failed to auth to %s by credential %s %s", t.conf.RestApiEndpoint, t.conf.Username, t.conf.Password)
 		return t.Wrapf(err, "newConfig fail")
 	}
-
 	return
 }
 
-func (t Task) Destroy(ctx context.Context) error {
+func (t *Task) Destroy(ctx context.Context) error {
 	return nil
 }
 
-func (t Task) StartWrite(ctx context.Context, receiver plugin.RecordReceiver) error {
+func (t *Task) StartWrite(ctx context.Context, receiver plugin.RecordReceiver) error {
 	recordChan := make(chan element.Record)
 	var wg sync.WaitGroup
+	var rerr error
 	wg.Add(1)
 	afterCtx, cancel := context.WithCancel(ctx)
 	//通过该协程读取记录接受器receiver的记录放入recordChan
@@ -64,22 +58,28 @@ func (t Task) StartWrite(ctx context.Context, receiver plugin.RecordReceiver) er
 			log.Debugf(t.Format("get records end"))
 		}()
 		log.Debugf(t.Format("start to get records"))
-		var record element.Record
-		// 从reader读数据放入中间传输
-		record, rerr := receiver.GetFromReader()
-		if rerr != nil && rerr != exchange.ErrEmpty {
-			return
-		}
-
-		//当记录接受器receiver返回不为空错误，写入recordChan
-		if rerr != exchange.ErrEmpty {
+		for {
 			select {
-			//防止在ctx关闭时不写入recordChan
 			case <-afterCtx.Done():
 				return
-			case recordChan <- record:
+			default:
+			}
+			var record element.Record
+			record, rerr = receiver.GetFromReader()
+			if rerr != nil && rerr != exchange.ErrEmpty {
+				return
 			}
 
+			//当记录接受器receiver返回不为空错误，写入recordChan
+			if rerr != exchange.ErrEmpty {
+				select {
+				//防止在ctx关闭时不写入recordChan
+				case <-afterCtx.Done():
+					return
+				case recordChan <- record:
+				}
+
+			}
 		}
 	}()
 	log.Debugf(t.Format("start to write"))
@@ -89,6 +89,9 @@ func (t Task) StartWrite(ctx context.Context, receiver plugin.RecordReceiver) er
 		case record, ok := <-recordChan:
 			if !ok {
 				log.Infof("write is over")
+				if err == nil {
+					err = rerr
+				}
 				goto End
 			}
 			if err = t.client.writeRecord(t.conf.KeyColumn, record); err != nil {
@@ -116,5 +119,7 @@ End:
 }
 
 func NewTask() *Task {
-	return &Task{}
+	return &Task{
+		BaseTask: writer.NewBaseTask(),
+	}
 }

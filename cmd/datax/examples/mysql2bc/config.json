@@ -1,0 +1,67 @@
+{
+    "core" : {
+        "container": {
+            "job":{
+                "id": 1,
+                "sleepInterval":100
+            },
+            "taskGroup":{
+                "id": 1,
+                "failover":{
+                    "retryIntervalInMsec":0
+                }
+            }
+        },
+        "transport":{
+            "channel":{
+                "speed":{
+                    "byte": 100,
+                    "record":100
+                }
+            }
+        }
+    },
+    "job":{
+        "content":[
+            {
+                "reader":{
+                    "name": "mysqlreader",
+                    "parameter": {
+                        "username": "root",
+                        "password": "123456",
+                        "column": ["*"],
+                        "connection":  {
+                                "url": "tcp(localhost:3306)/demo?parseTime=false",
+                                "table": {
+                                    "db":"demo",
+                                    "name":"demo"
+                                }
+                            },
+                        "where": ""
+                    }
+                },
+                "writer":{
+                    "name": "qizhiblock",
+                    "parameter": {
+                        "restApiEndpoint": "https://demo:8888",
+                        "username": "xxx",
+                        "password": "yyyy",
+                        "channel": "channel1",
+                        "chainCode": "map",
+                        "chainCodeFunction": "put",
+                        "keyColumn": 0,
+                        "batchSize": 10
+                    }
+                },
+               "transformer":[]
+            }
+        ],
+        "setting":{
+            "speed":{
+                "byte":3000,
+                "record":400,
+                "channel":4
+            }
+        }
+    }
+}

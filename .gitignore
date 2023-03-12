@@ -12,3 +12,5 @@ datax/plugin.go
 *.txt
 *.out
 *.exe
+**/datax.log
+cmd/datax/datax
